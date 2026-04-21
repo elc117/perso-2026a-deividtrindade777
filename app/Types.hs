@@ -6,6 +6,7 @@
 Module      : Types
 Description : Modelagem de dados do domínio FocusFlow
 Maintainer  : silvadeivi321@gmail.com
+Author      : Deivid Da Silva Trindade
 
 Define os Tipos de Dados Algébricos (ADTs) centrais da aplicação.
 Toda a lógica de negócio parte dessas definições imutáveis.
