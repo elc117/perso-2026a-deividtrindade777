@@ -59,6 +59,8 @@ executable FocusFlow
 
     -- .hs or .lhs file containing the Main module.
     main-is:          Main.hs
+    other-modules:    Types, Logic
+    ghc-options:      -threaded
 
     -- Modules included in this executable, other than Main.
     -- other-modules:
@@ -71,7 +73,8 @@ executable FocusFlow
                       scotty,
                       aeson,
                       time,
-                      text
+                      text,
+                      http-types,
 
     -- Directories containing source files.
     hs-source-dirs:   app
