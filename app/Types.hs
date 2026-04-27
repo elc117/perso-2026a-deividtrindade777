@@ -56,7 +56,7 @@ data Categoria
     | Faculdade
     | Lazer
     | Esportes
-    deriving (Show, Eq, Ord, Enum, Bounded, Generic)
+    deriving (Show, Eq, Ord, Enum, Bounded, Generic, Read)
 
 -- Instâncias JSON manuais para controlar a serialização:
 -- { "categoria": "Trabalho" } em vez de uma estrutura aninhada.
@@ -79,7 +79,7 @@ data Prioridade
     = Baixa
     | Media
     | Alta
-    deriving (Show, Eq, Ord, Enum, Bounded, Generic)
+    deriving (Show, Eq, Ord, Enum, Bounded, Generic, Read)
 
 instance ToJSON   Prioridade
 instance FromJSON Prioridade

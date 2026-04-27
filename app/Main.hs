@@ -3,18 +3,20 @@
 
 module Main (main) where
 
-import           Data.Aeson             (ToJSON, FromJSON, object, (.=))
+import           Control.Monad.IO.Class (liftIO)
+import           Database.SQLite.Simple (Connection)
+import           Data.Aeson             (ToJSON, object, (.=))
 import           Data.Text.Lazy         (Text)
 import           Data.Time              (fromGregorian, TimeOfDay (..))
 import           GHC.Generics           (Generic)
 import           Network.HTTP.Types     (status201, status409)
 import           Web.Scotty
 
--- Importação dos módulos locais
-import           Logic                  (temConflito, conflitosEm)
-import           Types                  (Tarefa (..), Categoria (..), Prioridade (..))
+import           Database (inicializarDB, listarTarefas, inserirTarefa)
+import           Logic    (temConflito, conflitosEm)
+import           Types    (Tarefa (..), Categoria (..), Prioridade (..))
 
--- Envelopes para padronização das respostas da API
+-- Envelopes de resposta
 data ErroResponse = ErroResponse
     { mensagem :: Text
     , codigo   :: Text
@@ -23,38 +25,64 @@ data ErroResponse = ErroResponse
 instance ToJSON ErroResponse
 
 data SucessoResponse a = SucessoResponse
-    { dados    :: a
+    { dados :: a
     } deriving (Show, Generic)
 
 instance ToJSON a => ToJSON (SucessoResponse a)
 
--- Dados iniciais para teste (Simulação de DB)
-agendaMock :: [Tarefa]
-agendaMock =
-    [ Tarefa 1 "Reunião de Sprint" Trabalho Alta (fromGregorian 2025 10 20) (TimeOfDay 9 0 0) 60 Nothing
-    , Tarefa 2 "Aula de Paradigmas" Faculdade Alta (fromGregorian 2025 10 20) (TimeOfDay 10 30 0) 90 Nothing
+-- GET /api/status
+rotaStatus :: ActionM ()
+rotaStatus = json $ object
+    [ "status"  .= ("ok" :: Text)
+    , "projeto" .= ("FocusFlow" :: Text)
     ]
 
--- Handlers das Rotas
-rotaStatus :: ActionM ()
-rotaStatus = json $ object [ "status" .= ("ok" :: Text), "projeto" .= ("FocusFlow" :: Text) ]
+-- GET /api/tarefas
+-- liftIO "sobe" a operação IO para dentro do contexto ActionM do Scotty.
+-- Sem ele, o compilador reclamaria que IO e ActionM são contextos diferentes.
+rotaGetTarefas :: Connection -> ActionM ()
+rotaGetTarefas conn = do
+    tarefas <- liftIO (listarTarefas conn)
+    json tarefas
 
-rotaPostTarefa :: ActionM ()
-rotaPostTarefa = do
+-- POST /api/tarefas
+rotaPostTarefa :: Connection -> ActionM ()
+rotaPostTarefa conn = do
     novaTarefa <- jsonData
-    let conflito      = temConflito novaTarefa agendaMock
-        tarefasEmConf = conflitosEm novaTarefa agendaMock
+
+    -- Busca a agenda atual do banco para checar conflitos (substitui agendaMock)
+    existentes <- liftIO (listarTarefas conn)
+
+    let conflito      = temConflito novaTarefa existentes
+        tarefasEmConf = conflitosEm novaTarefa existentes
 
     if conflito
         then do
             status status409
-            json $ object [ "erro" .= ("Conflito de horário" :: Text), "conflitos" .= tarefasEmConf ]
+            json $ object
+                [ "erro"      .= ("Conflito de horário" :: Text)
+                , "conflitos" .= tarefasEmConf
+                ]
         else do
+            liftIO (inserirTarefa conn novaTarefa)
             status status201
             json $ SucessoResponse novaTarefa
 
--- Definição do servidor
-main :: IO ()
-main = scotty 8080 $ do
+-- Rotas
+app :: Connection -> ScottyM ()
+app conn = do
     get  "/api/status"  rotaStatus
-    post "/api/tarefas" rotaPostTarefa
+    get  "/api/tarefas" (rotaGetTarefas conn)
+    post "/api/tarefas" (rotaPostTarefa conn)
+
+-- Ponto de entrada
+main :: IO ()
+main = do
+    conn <- inicializarDB
+
+    putStrLn "╔══════════════════════════════════╗"
+    putStrLn "║   FocusFlow API  -  Sprint 4     ║"
+    putStrLn "║   http://localhost:8080          ║"
+    putStrLn "╚══════════════════════════════════╝"
+
+    scotty 8080 (app conn)

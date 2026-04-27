@@ -1,1 +1,18 @@
 dist-newstyle/
+
+*.db
+    ```bash
+    git add app/Database.hs app/Main.hs FocusFlow.cabal .gitignore
+    ```
+  
+
+  
+    ```bash
+    git commit -m "feat(db): integrate sqlite-simple, add table creation and POST route persistence"
+    ```
+  
+
+  
+    ```bash
+    git push
+    ```
