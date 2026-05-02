@@ -4,7 +4,8 @@ services:
     runtime: docker
     plan: free
     dockerfilePath: ./Dockerfile
-    port: 8080
     envVars:
       - key: PORT
         value: 8080
+      - key: SKIP_CHECK
+        value: "true"
