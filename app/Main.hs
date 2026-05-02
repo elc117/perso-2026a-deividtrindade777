@@ -1,10 +1,9 @@
-import Web.Scotty
-
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE DeriveGeneric     #-}
 
 module Main (main) where
 
+import           Web.Scotty
 import           Control.Monad.IO.Class (liftIO)
 import           Database.SQLite.Simple (Connection)
 import           Data.Aeson             (ToJSON, object, (.=))
