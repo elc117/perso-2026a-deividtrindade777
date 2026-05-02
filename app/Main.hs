@@ -3,7 +3,7 @@
 
 module Main (main) where
 
-import           Web.Scotty
+import           Web.Scotty (scotty, get, post, put, delete, json, param, ActionM, body, status)
 import           Control.Monad.IO.Class (liftIO)
 import           Database.SQLite.Simple (Connection)
 import           Data.Aeson             (ToJSON, object, (.=))
