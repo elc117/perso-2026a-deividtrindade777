@@ -1,3 +1,5 @@
+import Web.Scotty
+
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE DeriveGeneric     #-}
 
@@ -68,7 +70,7 @@ rotaPostTarefa conn = do
 -- Retornamos 200 com mensagem de sucesso de qualquer forma, pois o estado final é o mesmo.
 rotaDeleteTarefa :: Connection -> ActionM ()
 rotaDeleteTarefa conn = do
-    tid <- param "id"
+    tid <- param "id" :: ActionM Int
     liftIO (deletarTarefa conn tid)
     json $ object [ "mensagem" .= ("Tarefa removida com sucesso" :: Text) ]
 
