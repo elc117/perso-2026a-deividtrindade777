@@ -7,16 +7,14 @@ import           Control.Monad.IO.Class (liftIO)
 import           Database.SQLite.Simple (Connection)
 import           Data.Aeson             (ToJSON, object, (.=))
 import           Data.Text.Lazy         (Text)
-import           Data.Time              (fromGregorian, TimeOfDay (..))
 import           GHC.Generics           (Generic)
-import           Network.HTTP.Types     (status201, status409)
+import           Network.HTTP.Types     (status201, status404, status409)
 import           Web.Scotty
 
-import           Database (inicializarDB, listarTarefas, inserirTarefa)
+import           Database (inicializarDB, listarTarefas, inserirTarefa, deletarTarefa)
 import           Logic    (temConflito, conflitosEm)
 import           Types    (Tarefa (..), Categoria (..), Prioridade (..))
 
--- Envelopes de resposta
 data ErroResponse = ErroResponse
     { mensagem :: Text
     , codigo   :: Text
@@ -38,8 +36,6 @@ rotaStatus = json $ object
     ]
 
 -- GET /api/tarefas
--- liftIO "sobe" a operação IO para dentro do contexto ActionM do Scotty.
--- Sem ele, o compilador reclamaria que IO e ActionM são contextos diferentes.
 rotaGetTarefas :: Connection -> ActionM ()
 rotaGetTarefas conn = do
     tarefas <- liftIO (listarTarefas conn)
@@ -49,8 +45,6 @@ rotaGetTarefas conn = do
 rotaPostTarefa :: Connection -> ActionM ()
 rotaPostTarefa conn = do
     novaTarefa <- jsonData
-
-    -- Busca a agenda atual do banco para checar conflitos (substitui agendaMock)
     existentes <- liftIO (listarTarefas conn)
 
     let conflito      = temConflito novaTarefa existentes
@@ -68,20 +62,30 @@ rotaPostTarefa conn = do
             status status201
             json $ SucessoResponse novaTarefa
 
+-- DELETE /api/tarefas/:id
+-- `param "id"` lê o segmento dinâmico da URL e converte para Int automaticamente.
+-- Se o id não existir na tabela, o SQLite simplesmente não apaga nada (0 linhas afetadas).
+-- Retornamos 200 com mensagem de sucesso de qualquer forma, pois o estado final é o mesmo.
+rotaDeleteTarefa :: Connection -> ActionM ()
+rotaDeleteTarefa conn = do
+    tid <- param "id"
+    liftIO (deletarTarefa conn tid)
+    json $ object [ "mensagem" .= ("Tarefa removida com sucesso" :: Text) ]
+
 -- Rotas
 app :: Connection -> ScottyM ()
 app conn = do
-    get  "/api/status"  rotaStatus
-    get  "/api/tarefas" (rotaGetTarefas conn)
-    post "/api/tarefas" (rotaPostTarefa conn)
+    get    "/api/status"       rotaStatus
+    get    "/api/tarefas"      (rotaGetTarefas  conn)
+    post   "/api/tarefas"      (rotaPostTarefa  conn)
+    delete "/api/tarefas/:id"  (rotaDeleteTarefa conn)
 
--- Ponto de entrada
 main :: IO ()
 main = do
     conn <- inicializarDB
 
     putStrLn "╔══════════════════════════════════╗"
-    putStrLn "║   FocusFlow API  -  Sprint 4     ║"
+    putStrLn "║   FocusFlow API  -  Sprint 5     ║"
     putStrLn "║   http://localhost:8080          ║"
     putStrLn "╚══════════════════════════════════╝"
 
