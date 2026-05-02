@@ -1,12 +1,14 @@
 FROM haskell:9.6 AS build
 WORKDIR /app
 
-COPY focusflow.cabal ./
+# Ajustado para FocusFlow.cabal (com F e F maiúsculos)
+COPY FocusFlow.cabal ./
 RUN cabal update && cabal build --only-dependencies -j4
 
 COPY . .
+# Ajustado para usar o nome exato do executável
 RUN cabal build -j4
-RUN cp $(cabal list-bin focusflow) /app/focusflow-exe
+RUN cp $(cabal list-bin FocusFlow) /app/focusflow-exe
 
 FROM debian:bookworm-slim
 RUN apt-get update && apt-get install -y \
