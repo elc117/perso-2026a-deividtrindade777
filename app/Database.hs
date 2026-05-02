@@ -1,25 +1,22 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-module Database (inicializarDB, listarTarefas, inserirTarefa) where
+module Database (inicializarDB, listarTarefas, inserirTarefa, deletarTarefa) where
 
 import Database.SQLite.Simple
 import Data.Text (unpack)
 
 import Types
 
--- FromRow: ensina o sqlite-simple a converter uma linha da tabela em Tarefa
--- Cada `field` lê a próxima coluna na ordem do SELECT.
--- `read . unpack` faz o caminho inverso do `show`: TEXT -> tipo Haskell.
 instance FromRow Tarefa where
     fromRow = Tarefa
-        <$> field                     -- id        :: Int
-        <*> field                     -- titulo    :: Text
-        <*> (read . unpack <$> field) -- categoria :: Categoria
-        <*> (read . unpack <$> field) -- prioridade:: Prioridade
-        <*> (read . unpack <$> field) -- data      :: Day
-        <*> (read . unpack <$> field) -- inicio    :: TimeOfDay
-        <*> field                     -- duracao   :: Int
-        <*> field                     -- descricao :: Maybe Text
+        <$> field
+        <*> field
+        <*> (read . unpack <$> field)
+        <*> (read . unpack <$> field)
+        <*> (read . unpack <$> field)
+        <*> (read . unpack <$> field)
+        <*> field
+        <*> field
 
 inicializarDB :: IO Connection
 inicializarDB = do
@@ -55,3 +52,9 @@ inserirTarefa conn t =
 listarTarefas :: Connection -> IO [Tarefa]
 listarTarefas conn =
     query_ conn "SELECT id, titulo, categoria, prioridade, data, inicio, duracao, descricao FROM tarefas"
+
+-- Apaga a tarefa pelo id. Usa `execute` com parâmetro para evitar SQL injection.
+-- `Only` é um wrapper do sqlite-simple para passar um único valor como parâmetro.
+deletarTarefa :: Connection -> Int -> IO ()
+deletarTarefa conn tid =
+    execute conn "DELETE FROM tarefas WHERE id = ?" (Only tid)
