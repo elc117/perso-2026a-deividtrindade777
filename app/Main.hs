@@ -3,8 +3,7 @@
 
 module Main (main) where
 
-import           Web.Scotty hiding (param)
-import qualified Web.Scotty as S
+import           Web.Scotty
 import           Web.Scotty.Internal.Types (ActionT)
 import           Control.Monad.IO.Class (liftIO)
 import           Database.SQLite.Simple (Connection)
@@ -12,7 +11,6 @@ import           Data.Aeson             (ToJSON, object, (.=))
 import           Data.Text.Lazy         (Text)
 import           GHC.Generics           (Generic)
 import           Network.HTTP.Types     (status201, status404, status409)
-import           Web.Scotty
 
 import           Database (inicializarDB, listarTarefas, inserirTarefa, deletarTarefa)
 import           Logic    (temConflito, conflitosEm)
@@ -71,7 +69,7 @@ rotaPostTarefa conn = do
 -- Retornamos 200 com mensagem de sucesso de qualquer forma, pois o estado final é o mesmo.
 rotaDeleteTarefa :: Connection -> ActionM ()
 rotaDeleteTarefa conn = do
-    tid <- S.param "id" :: ActionM Int
+    tid <- pathParam "id" :: ActionM Int
     liftIO (deletarTarefa conn tid)
     json $ object [ "mensagem" .= ("Tarefa removida com sucesso" :: Text) ]
 
