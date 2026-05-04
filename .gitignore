@@ -1,5 +1,5 @@
 dist-newstyle/
-
+.vscode/
 *.db
     ```bash
     git add app/Database.hs app/Main.hs FocusFlow.cabal .gitignore
