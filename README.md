@@ -90,6 +90,43 @@ Abaixo, a execução prática batendo no link de deploy, comprovando o funcionam
 
 ![Demonstração da API](assets/FocusFlow.gif)
 
+### 7.1 Como testar a API na prática (via cURL)
+Para facilitar a avaliação, abaixo estão os comandos `curl` prontos para testar todas as rotas e a lógica de negócios da API pelo terminal.
+
+*(Os exemplos abaixo apontam para o deploy no Render. Se estiver rodando o projeto localmente via `.devcontainer` ou nativo, basta substituir `https://focusflow-api-nlhc.onrender.com` por `http://localhost:8080`).*
+
+**1. Cadastrar a primeira tarefa (Horário Livre)**
+
+Este comando insere uma tarefa das 14:00 às 16:00. O parser do Haskell exige a chave `"id"`, mas passamos `0` pois o banco SQLite gera o ID real automaticamente.
+
+```bash
+curl -X POST https://focusflow-api-nlhc.onrender.com/api/tarefas -H "Content-Type: application/json" -d '{"id": 0, "titulo": "Estudar Paradigmas", "categoria": "Estudos", "inicio": "14:00", "fim": "16:00"}'
+```
+
+**2. Testar a Lógica Funcional (Forçar Conflito de Horários)**
+
+Ao tentar cadastrar uma reunião que começa às 15:00, a função pura `temConflito` (do módulo `Logic.hs`) detecta a sobreposição com a tarefa anterior e bloqueia a inserção, retornando um erro 400.
+
+```bash
+curl -X POST https://focusflow-api-nlhc.onrender.com/api/tarefas -H "Content-Type: application/json" -d '{"id": 0, "titulo": "Reunião de Estágio", "categoria": "Trabalho", "inicio": "15:00", "fim": "17:00"}'
+```
+
+**3. Listar todas as tarefas (Verificar Banco de Dados)**
+
+Retorna a lista completa de tarefas salvas para confirmar que a reunião conflitante realmente não foi gravada.
+
+```bash
+curl -X GET https://focusflow-api-nlhc.onrender.com/api/tarefas
+```
+
+**4. Deletar uma tarefa**
+
+Para liberar o horário na agenda, basta deletar a tarefa passando o seu ID na URL (neste caso, deletando a tarefa de ID 1).
+
+```bash
+curl -X DELETE https://focusflow-api-nlhc.onrender.com/api/tarefas/1
+```
+
 ## 8. Uso de IA
 
 ### 8.1 Ferramentas de IA utilizadas
